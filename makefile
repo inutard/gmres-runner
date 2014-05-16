@@ -16,3 +16,7 @@ ex1: ex1.o  chkopts
 gmres_runner: gmres_runner.o  chkopts
 	-${CLINKER} -o gmres_runner gmres_runner.o  ${PETSC_KSP_LIB}
 	${RM} gmres_runner.o
+
+minres_runner: minres_runner.o  chkopts
+	-${CLINKER} -o minres_runner minres_runner.o  ${PETSC_KSP_LIB}
+	${RM} minres_runner.o
