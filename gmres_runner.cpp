@@ -80,8 +80,8 @@ int main(int argc, char* args[]) {
 	Vec            x, b, u;      /* approx solution, RHS, exact solution */
 	Mat            A, L, D;            /* linear system matrix */
 	KSP            ksp;         /* linear solver context */
-	// PC             left_pc, right_pc;           /* preconditioner context */
-	// LdlPC  *shell;    /* user-defined preconditioner context */
+	PC             left_pc, right_pc;           /* preconditioner context */
+	LdlPC  *shell;    /* user-defined preconditioner context */
 	PetscReal      norm,tolerance=1.e-14;  /* norm of solution error */
 	PetscErrorCode ierr;
 	PetscInt       n,its;
@@ -107,6 +107,7 @@ int main(int argc, char* args[]) {
 	
 	//cout << "creating matrix A... " << endl;
 	ConvertMatrix(solv.A, A);
+	MatSetOption(A, MAT_SYMMETRIC, PETSC_TRUE);
 	//cout << "creating matrix L... " << endl;
 	ConvertMatrix(solv.L, L);
 	
@@ -167,36 +168,36 @@ int main(int argc, char* args[]) {
 	// uncomment to use GMRES
 	//ierr = KSPSetType(&ksp, KSPGMRES); CHKERRQ(ierr);
 	KSPGetPC(ksp,&pc);
-	PCSetType(pc,PCILU);
-	ierr = KSPSetTolerances(ksp,tolerance,PETSC_DEFAULT,
-			        PETSC_DEFAULT,PETSC_DEFAULT); CHKERRQ(ierr);
+	//PCSetType(pc,PCILU);
+	//ierr = KSPSetTolerances(ksp,tolerance,PETSC_DEFAULT,
+	//		        PETSC_DEFAULT,PETSC_DEFAULT); CHKERRQ(ierr);
 	
 	
-	/*
 	// set preconditoners
 	ierr = KSPGetPC(ksp, &left_pc); CHKERRQ(ierr);
 
 	// indicate to PETSc that we're using a "shell" preconditioner
-	ierr = PCSetType(pc,PCSHELL);CHKERRQ(ierr);
+	ierr = PCSetType(left_pc,PCSHELL);CHKERRQ(ierr);
 
 	// create a context for the user-defined preconditioner; this
 	// context can be used to contain any application-specific data
 	ierr = LdlPCCreate(&shell); CHKERRQ(ierr);
 
 	// set the user-defined routine for applying the preconditioner
-	ierr = LdlSetApply(pc, LdlPCApply);CHKERRQ(ierr);
-	ierr = LdlSetContext(pc,shell); CHKERRQ(ierr);
+	ierr = PCShellSetApply(left_pc, LdlPCApply);CHKERRQ(ierr);
+	ierr = PCShellSetContext(left_pc,shell); CHKERRQ(ierr);
 
 	// set user-defined function to free objects used by custom preconditioner
-	ierr = LdlSetDestroy(pc, LdlPCDestroy); CHKERRQ(ierr);
+	ierr = PCShellSetDestroy(left_pc, LdlPCDestroy); CHKERRQ(ierr);
 
 	// set a name for the preconditioner, used for PCView()
-	ierr = LdlSetName(pc,"LdlPreconditioner"); CHKERRQ(ierr);
+	ierr = PCShellSetName(left_pc,"LdlPreconditioner"); CHKERRQ(ierr);
 
 	// do any setup required for the preconditioner
 	ierr = LdlPCSetUp(pc,A,x); CHKERRQ(ierr);
-	*/
 
+	// set preconditioner side
+	ierr = KSPSetPCSide(ksp, PC_RIGHT);
 	// finalize solver options
 	ierr = KSPSetFromOptions(ksp); CHKERRQ(ierr);
 	// solve!
@@ -266,7 +267,7 @@ PetscErrorCode LdlPCApply(PC pc, Vec x, Vec y) {
 	// i.e. solving M^(-1) * x = y
 	ierr = PCShellGetContext(pc, (void**)&shell); CHKERRQ(ierr);
 	ierr = MatMult(shell->M, x, y); CHKERRQ(ierr);
-
+	//ierr = MatSolve(shell->M, x, y);
 	return 0;
 }
 
