@@ -20,3 +20,7 @@ gmres_runner: gmres_runner.o  chkopts
 minres_runner: minres_runner.o  chkopts
 	-${CLINKER} -o minres_runner minres_runner.o  ${PETSC_KSP_LIB}
 	${RM} minres_runner.o
+
+direct_runner: direct_runner.o  chkopts
+	-${CLINKER} -o direct_runner direct_runner.o  ${PETSC_KSP_LIB}
+	${RM} direct_runner.o
